@@ -3,95 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blue Gecko Bike</title>
+    <title>Blue Gecko Bike Dashboard</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #111827;
-            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
             margin: 0;
-            padding: 30px;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
         }
 
         .container {
-            max-width: 700px;
-            margin: auto;
+            max-width: 650px;
+            width: 100%;
         }
 
         h1 {
             text-align: center;
+            margin-bottom: 20px;
+            font-size: 26px;
+        }
+
+        .status-banner {
+            text-align: center;
+            font-weight: 600;
+            padding: 10px;
+            border-radius: 8px;
+            background: #1e293b;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+
+        .status-banner.connected {
+            background: #064e3b;
+            color: #34d399;
+            border-color: #059669;
         }
 
         button {
             display: block;
-            margin: 20px auto;
-            padding: 14px 28px;
-            font-size: 18px;
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-
-        .btn-connect {
             background: #2563eb;
             color: white;
+            transition: background 0.2s ease;
+            margin-bottom: 24px;
         }
 
-        .btn-connect:hover {
+        button:hover {
             background: #1d4ed8;
         }
 
-        .status {
-            text-align: center;
-            margin: 20px;
-            color: #9ca3af;
-            font-weight: bold;
+        button.btn-disconnect {
+            background: #dc2626;
         }
 
-        .connected {
-            color: #22c55e;
+        button.btn-disconnect:hover {
+            background: #b91c1c;
         }
 
-        .dashboard {
+        .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 30px;
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .card {
-            background: #1f2937;
+            background: #1e293b;
+            border: 1px solid #334155;
             border-radius: 12px;
-            padding: 25px;
+            padding: 20px;
             text-align: center;
-            border: 1px solid #374151;
+        }
+
+        .label {
+            font-size: 14px;
+            color: #94a3b8;
+            font-weight: 500;
         }
 
         .value {
-            font-size: 42px;
-            font-weight: bold;
-            margin-top: 10px;
+            font-size: 38px;
+            font-weight: 700;
+            margin: 8px 0;
+            color: #f8fafc;
         }
 
         .unit {
-            color: #9ca3af;
-            margin-top: 5px;
-            font-size: 14px;
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .log {
-            margin-top: 30px;
-            background: #1f2937;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 13px;
-            height: 150px;
+        .console-container {
+            background: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .console-title {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .console {
+            height: 140px;
             overflow-y: auto;
-            border: 1px solid #374151;
+            font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            color: #cbd5e1;
             white-space: pre-wrap;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -100,214 +136,198 @@
 <div class="container">
     <h1>🚲 Blue Gecko Bike</h1>
 
-    <div id="status" class="status">Disconnected</div>
+    <div id="statusBanner" class="status-banner">Ready to connect</div>
 
-    <button id="connectButton" class="btn-connect">Connect to Bike</button>
+    <button id="toggleBtn">Connect to Bike</button>
 
-    <div class="dashboard">
+    <div class="grid">
         <div class="card">
-            <div>Speed</div>
-            <div id="speed" class="value">--</div>
+            <div class="label">Speed</div>
+            <div id="speedVal" class="value">--</div>
             <div class="unit">mph</div>
         </div>
 
         <div class="card">
-            <div>Cadence</div>
-            <div id="cadence" class="value">--</div>
+            <div class="label">Cadence</div>
+            <div id="cadenceVal" class="value">--</div>
             <div class="unit">RPM</div>
         </div>
 
         <div class="card">
-            <div>Wheel Revolutions</div>
-            <div id="wheelRevolutions" class="value">--</div>
-            <div class="unit">revolutions</div>
+            <div class="label">Wheel Revolutions</div>
+            <div id="wheelVal" class="value">--</div>
+            <div class="unit">Revs</div>
         </div>
 
         <div class="card">
-            <div>Connection</div>
-            <div id="connection" class="value" style="color: #ef4444;">OFF</div>
-            <div class="unit">BLE Status</div>
+            <div class="label">BLE Link</div>
+            <div id="linkVal" class="value" style="color: #ef4444;">OFF</div>
+            <div class="unit">Status</div>
         </div>
     </div>
 
-    <div class="log" id="log">Waiting for connection...</div>
+    <div class="console-container">
+        <div class="console-title">Live Radio Logs</div>
+        <div id="consoleLog" class="console">Awaiting user action...</div>
+    </div>
 </div>
 
 <script>
-// Standard GATT Cycling Speed and Cadence Service UUIDs
-const CSC_SERVICE_UUID = 0x1816;
-const CSC_MEASUREMENT_UUID = 0x2A5B;
+const CSC_SERVICE = 'cycling_speed_and_cadence';
+const CSC_CHAR = 'csc_measurement';
 
-let device;
-let server;
-let measurementCharacteristic;
+let bleDevice = null;
+let gattServer = null;
+let cscCharacteristic = null;
 
-// Math State Variables for Delta Calculation
 let prevWheelRevolutions = -1;
-let prevWheelEventTime = -1;
+let prevWheelTime = -1;
 let prevCrankRevolutions = -1;
-let prevCrankEventTime = -1;
+let prevCrankTime = -1;
 
-// DOM Elements
-const connectButton = document.getElementById("connectButton");
-const statusElement = document.getElementById("status");
-const connectionElement = document.getElementById("connection");
-const speedElement = document.getElementById("speed");
-const cadenceElement = document.getElementById("cadence");
-const wheelRevolutionsElement = document.getElementById("wheelRevolutions");
-const logElement = document.getElementById("log");
+const toggleBtn = document.getElementById('toggleBtn');
+const statusBanner = document.getElementById('statusBanner');
+const speedVal = document.getElementById('speedVal');
+const cadenceVal = document.getElementById('cadenceVal');
+const wheelVal = document.getElementById('wheelVal');
+const linkVal = document.getElementById('linkVal');
+const consoleLog = document.getElementById('consoleLog');
 
-// ----------------------------------------------------
-// CONNECT TO BLE DEVICE
-// ----------------------------------------------------
-connectButton.addEventListener("click", async () => {
+function writeLog(text) {
+    const time = new Date().toLocaleTimeString();
+    consoleLog.textContent += `\n[${time}] ${text}`;
+    consoleLog.scrollTop = consoleLog.scrollHeight;
+    console.log(`[${time}] ${text}`);
+}
+
+toggleBtn.addEventListener('click', async () => {
+    if (bleDevice && bleDevice.gatt.connected) {
+        writeLog("Disconnecting device session...");
+        bleDevice.gatt.disconnect();
+        return;
+    }
+
     try {
-        log("Opening Bluetooth device picker...");
-        statusElement.textContent = "Scanning...";
+        writeLog("Opening Web Bluetooth device prompt...");
+        statusBanner.textContent = "Scanning for all nearby BLE devices...";
 
-        // Request BLE peripheral with the CSC Service Profile
-        device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: [CSC_SERVICE_UUID] }]
+        bleDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [
+                CSC_SERVICE,
+                0x1816,
+                '00001816-0000-1000-8000-00805f9b34fb'
+            ]
         });
 
-        log("Selected device: " + (device.name || "Unnamed Device"));
-        device.addEventListener("gattserverdisconnected", onDisconnected);
+        writeLog(`Paired with: ${bleDevice.name || 'Unnamed Peripheral'}`);
+        bleDevice.addEventListener('gattserverdisconnected', handleDisconnect);
 
-        statusElement.textContent = "Connecting to GATT Server...";
-        server = await device.gatt.connect();
-        log("Connected to GATT server.");
+        statusBanner.textContent = "Connecting to GATT server...";
+        gattServer = await bleDevice.gatt.connect();
+        writeLog("GATT connection established.");
 
-        log("Fetching Cycling Speed and Cadence service...");
-        const service = await server.getPrimaryService(CSC_SERVICE_UUID);
+        writeLog("Locating Cycling Speed & Cadence service...");
+        let service;
+        try {
+            service = await gattServer.getPrimaryService(CSC_SERVICE);
+        } catch {
+            service = await gattServer.getPrimaryService('00001816-0000-1000-8000-00805f9b34fb');
+        }
 
-        log("Fetching CSC Measurement characteristic...");
-        measurementCharacteristic = await service.getCharacteristic(CSC_MEASUREMENT_UUID);
+        writeLog("Locating CSC Measurement characteristic...");
+        try {
+            cscCharacteristic = await service.getCharacteristic(CSC_CHAR);
+        } catch {
+            cscCharacteristic = await service.getCharacteristic('00002a5b-0000-1000-8000-00805f9b34fb');
+        }
 
-        log("Starting live notifications...");
-        await measurementCharacteristic.startNotifications();
-        measurementCharacteristic.addEventListener("characteristicvaluechanged", handleCSCMeasurement);
+        writeLog("Subscribing to real-time notifications...");
+        await cscCharacteristic.startNotifications();
+        cscCharacteristic.addEventListener('characteristicvaluechanged', processMeasurement);
 
-        // Update UI Context to Connected
-        statusElement.textContent = "Connected";
-        statusElement.classList.add("connected");
-        connectionElement.textContent = "ON";
-        connectionElement.style.color = "#22c55e";
-        connectButton.textContent = "Disconnect";
-        connectButton.style.background = "#dc2626"; // Change button to red
+        statusBanner.textContent = `Connected to ${bleDevice.name || 'Device'}`;
+        statusBanner.classList.add('connected');
+        linkVal.textContent = "ON";
+        linkVal.style.color = "#34d399";
+        toggleBtn.textContent = "Disconnect";
+        toggleBtn.classList.add('btn-disconnect');
+        writeLog("Pipeline active. Waiting for bike sensor packets...");
 
-        log("Live notifications active and running.");
-
-    } catch (error) {
-        console.error(error);
-        log("ERROR: " + error.message);
-        statusElement.textContent = "Connection failed";
-        resetUi();
+    } catch (err) {
+        writeLog(`Error: ${err.message}`);
+        handleDisconnect();
     }
 });
 
-// Toggle button functionality for Disconnect
-connectButton.addEventListener('click', () => {
-    if (device && device.gatt.connected && connectButton.textContent === "Disconnect") {
-        log("Disconnecting client context manually...");
-        device.gatt.disconnect();
-    }
-});
-
-// ----------------------------------------------------
-// PARSE & CALCULATE CSC REAL-TIME PACKETS
-// ----------------------------------------------------
-function handleCSCMeasurement(event) {
+function processMeasurement(event) {
     const data = event.target.value;
     const flags = data.getUint8(0);
-    let offset = 1;
+    let byteOffset = 1;
 
-    // Log raw data stream arrays for debugging layout shapes
     const rawBytes = Array.from(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
-    log("Received bytes: " + rawBytes.join(" "));
+    writeLog(`Packet: [${rawBytes.join(', ')}]`);
 
-    // 1. Wheel Data Present (Bit 0 is set) -> Compute Speed
+    // Flag Bit 0: Wheel Revolution Data Present
     if (flags & 0x01) {
-        const cumulativeWheelRevolutions = data.getUint32(offset, true);
-        offset += 4;
-        const lastWheelEventTime = data.getUint16(offset, true); // Unit: 1/1024 seconds
-        offset += 2;
+        const cumulativeWheel = data.getUint32(byteOffset, true);
+        byteOffset += 4;
+        const wheelTime = data.getUint16(byteOffset, true);
+        byteOffset += 2;
 
-        wheelRevolutionsElement.textContent = cumulativeWheelRevolutions;
+        wheelVal.textContent = cumulativeWheel;
 
-        if (prevWheelRevolutions !== -1 && lastWheelEventTime !== prevWheelEventTime) {
-            let revsDiff = cumulativeWheelRevolutions - prevWheelRevolutions;
-            let timeDiff = (lastWheelEventTime - prevWheelEventTime) / 1024;
+        if (prevWheelRevolutions !== -1 && wheelTime !== prevWheelTime) {
+            const revDiff = cumulativeWheel - prevWheelRevolutions;
+            let timeDiffSec = (wheelTime - prevWheelTime) / 1024;
+            if (timeDiffSec < 0) timeDiffSec += 64; // Handle 16-bit counter rollover
 
-            // Handle 16-bit millisecond timer wrap-around rollover
-            if (timeDiff < 0) timeDiff += 64; 
-
-            // Standard 700x25c wheel diameter configuration (~2.11 meters circumference)
-            const wheelCircumferenceMeters = 2.11; 
-            const metersPerSecond = (revsDiff * wheelCircumferenceMeters) / timeDiff;
-            const mph = metersPerSecond * 2.23694;
-
-            speedElement.textContent = mph.toFixed(1);
+            const circumferenceMeters = 2.11; // Standard 700x25c wheel size
+            const speedMph = ((revDiff * circumferenceMeters) / timeDiffSec) * 2.23694;
+            speedVal.textContent = Math.max(0, speedMph).toFixed(1);
         }
 
-        prevWheelRevolutions = cumulativeWheelRevolutions;
-        prevWheelEventTime = lastWheelEventTime;
+        prevWheelRevolutions = cumulativeWheel;
+        prevWheelTime = wheelTime;
     }
 
-    // 2. Crank Data Present (Bit 1 is set) -> Compute Cadence (RPM)
+    // Flag Bit 1: Crank Revolution Data Present
     if (flags & 0x02) {
-        const cumulativeCrankRevolutions = data.getUint16(offset, true);
-        offset += 2;
-        const lastCrankEventTime = data.getUint16(offset, true); // Unit: 1/1024 seconds
-        offset += 2;
+        const cumulativeCrank = data.getUint16(byteOffset, true);
+        byteOffset += 2;
+        const crankTime = data.getUint16(byteOffset, true);
+        byteOffset += 2;
 
-        if (prevCrankRevolutions !== -1 && lastCrankEventTime !== prevCrankEventTime) {
-            let crankRevsDiff = cumulativeCrankRevolutions - prevCrankRevolutions;
-            let crankTimeDiff = (lastCrankEventTime - prevCrankEventTime) / 1024;
+        if (prevCrankRevolutions !== -1 && crankTime !== prevCrankTime) {
+            const crankDiff = cumulativeCrank - prevCrankRevolutions;
+            let timeDiffSec = (crankTime - prevCrankTime) / 1024;
+            if (timeDiffSec < 0) timeDiffSec += 64; // Handle 16-bit counter rollover
 
-            if (crankTimeDiff < 0) crankTimeDiff += 64; 
-
-            const rpm = (crankRevsDiff / crankTimeDiff) * 60;
-            cadenceElement.textContent = Math.round(rpm);
+            const rpm = (crankDiff / timeDiffSec) * 60;
+            cadenceVal.textContent = Math.round(Math.max(0, rpm));
         }
 
-        prevCrankRevolutions = cumulativeCrankRevolutions;
-        prevCrankEventTime = lastCrankEventTime;
+        prevCrankRevolutions = cumulativeCrank;
+        prevCrankTime = crankTime;
     }
 }
 
-// ----------------------------------------------------
-// CONNECTION CLEANUP HANDLERS
-// ----------------------------------------------------
-function onDisconnected() {
-    log("BLE link disconnected cleanly.");
-    resetUi();
-}
+function handleDisconnect() {
+    statusBanner.textContent = "Disconnected";
+    statusBanner.classList.remove('connected');
+    linkVal.textContent = "OFF";
+    linkVal.style.color = "#ef4444";
+    toggleBtn.textContent = "Connect to Bike";
+    toggleBtn.classList.remove('btn-disconnect');
+    speedVal.textContent = "--";
+    cadenceVal.textContent = "--";
+    wheelVal.textContent = "--";
 
-function resetUi() {
-    statusElement.textContent = "Disconnected";
-    statusElement.classList.remove("connected");
-    connectionElement.textContent = "OFF";
-    connectionElement.style.color = "#ef4444";
-    connectButton.textContent = "Connect to Bike";
-    connectButton.style.background = "#2563eb";
-    speedElement.textContent = "--";
-    cadenceElement.textContent = "--";
-    wheelRevolutionsElement.textContent = "--";
-    
-    // Clear computing markers
     prevWheelRevolutions = -1;
-    prevWheelEventTime = -1;
+    prevWheelTime = -1;
     prevCrankRevolutions = -1;
-    prevCrankEventTime = -1;
+    prevCrankTime = -1;
+
+    writeLog("BLE connection terminated.");
 }
 
-function log(message) {
-    console.log(message);
-    const timestamp = new Date().toLocaleTimeString();
-    logElement.innerHTML += `<br>[${timestamp}] ${message}`;
-    logElement.scrollTop = logElement.scrollHeight;
-}
-</script>
-
-</body>
-</html>
