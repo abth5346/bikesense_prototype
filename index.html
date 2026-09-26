@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Blue Gecko Bike</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 14px 28px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .status {
+            text-align: center;
+            margin: 20px;
+            color: #9ca3af;
+        }
+
+        .connected {
+            color: #22c55e;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .value {
+            font-size: 42px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .unit {
+            color: #9ca3af;
+        }
+
+        .log {
+            margin-top: 30px;
+            background: #1f2937;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🚲 Blue Gecko Bike</h1>
+
+    <div id="status" class="status">
+        Disconnected
+    </div>
+
+    <button id="connectButton">
+        Connect to Bike
+    </button>
+
+    <div class="dashboard">
+
+        <div class="card">
+            <div>Speed</div>
+            <div id="speed" class="value">--</div>
+            <div class="unit">mph</div>
+        </div>
+
+        <div class="card">
+            <div>Cadence</div>
+            <div id="cadence" class="value">--</div>
+            <div class="unit">RPM</div>
+        </div>
+
+        <div class="card">
+            <div>Wheel Revolutions</div>
+            <div id="wheelRevolutions" class="value">--</div>
+            <div class="unit">revolutions</div>
+        </div>
+
+        <div class="card">
+            <div>Connection</div>
+            <div id="connection" class="value">OFF</div>
+            <div class="unit">BLE</div>
+        </div>
+
+    </div>
+
+    <div class="log" id="log">
+        Waiting for connection...
+    </div>
+
+</div>
+
+<script>
+
+const CSC_SERVICE_UUID = 0x1816;
+const CSC_MEASUREMENT_UUID = 0x2A5B;
+
+let device;
+let server;
+let measurementCharacteristic;
+
+const connectButton = document.getElementById("connectButton");
+const statusElement = document.getElementById("status");
+const connectionElement = document.getElementById("connection");
+
+const speedElement = document.getElementById("speed");
+const cadenceElement = document.getElementById("cadence");
+const wheelRevolutionsElement =
+    document.getElementById("wheelRevolutions");
+
+const logElement = document.getElementById("log");
+
+
+// ----------------------------------------------------
+// CONNECT
+// ----------------------------------------------------
+
+connectButton.addEventListener("click", async () => {
+
+    try {
+
+        log("Opening Bluetooth device picker...");
+
+        device = await navigator.bluetooth.requestDevice({
+
+            filters: [
+                {
+                    services: [CSC_SERVICE_UUID]
+                }
+            ]
+
+        });
+
+        log("Selected device: " + device.name);
+
+        device.addEventListener(
+            "gattserverdisconnected",
+            disconnected
+        );
+
+        statusElement.textContent = "Connecting...";
+        
+        server = await device.gatt.connect();
+
+        log("Connected to GATT server.");
+
+        const service =
+            await server.getPrimaryService(CSC_SERVICE_UUID);
+
+        log("Cycling Speed and Cadence service found.");
+
+        measurementCharacteristic =
+            await service.getCharacteristic(
+                CSC_MEASUREMENT_UUID
+            );
+
+        log("CSC Measurement characteristic found.");
+
+        await measurementCharacteristic.startNotifications();
+
+        measurementCharacteristic.addEventListener(
+            "characteristicvaluechanged",
+            handleCSCMeasurement
+        );
+
+        statusElement.textContent = "Connected";
+        statusElement.classList.add("connected");
+
+        connectionElement.textContent = "ON";
+
+        connectButton.textContent = "Connected";
+
+        log("Notifications enabled.");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        log("ERROR: " + error.message);
+
+        statusElement.textContent =
+            "Connection failed";
+
+    }
+
+});
+
+
+// ----------------------------------------------------
+// RECEIVE CSC DATA
+// ----------------------------------------------------
+
+function handleCSCMeasurement(event) {
+
+    const data = event.target.value;
+
+    const flags = data.getUint8(0);
+
+    let offset = 1;
+
+    log(
+        "Received: " +
+        Array.from(
+            new Uint8Array(
+                data.buffer,
+                data.byteOffset,
+                data.byteLength
+            )
+        ).join(" ")
+    );
+
+
+    // ----------------------------------------------
+    // Wheel data
+    // ----------------------------------------------
+
+    if (flags & 0x01) {
+
+        const cumulativeWheelRevolutions =
+            data.getUint32(offset, true);
+
+        offset += 4;
+
+        const lastWheelEventTime =
+            data.getUint16(offset, true);
+
+        offset += 2;
+
+        wheelRevolutionsElement.textContent =
+            cumulativeWheelRevolutions;
+
+        console.log(
+            "Wheel revolutions:",
+            cumulativeWheelRevolutions
+        );
+
+        console.log(
+            "Wheel event time:",
+            lastWheelEventTime
+        );
+    }
+
+
+    // ----------------------------------------------
+    // Crank data
+    // ----------------------------------------------
+
+    if (flags & 0x02) {
+
+        const cumulativeCrankRevolutions =
+            data.getUint16(offset, true);
+
+        offset += 2;
+
+        const lastCrankEventTime =
+            data.getUint16(offset, true);
+
+        offset += 2;
+
+        console.log(
+            "Crank revolutions:",
+            cumulativeCrankRevolutions
+        );
+
+        console.log(
+            "Crank event time:",
+            lastCrankEventTime
+        );
+    }
+
+}
+
+
+// ----------------------------------------------------
+// DISCONNECTED
+// ----------------------------------------------------
+
+function disconnected() {
+
+    statusElement.textContent =
+        "Disconnected";
+
+    statusElement.classList.remove(
+        "connected"
+    );
+
+    connectionElement.textContent = "OFF";
+
+    connectButton.textContent =
+        "Connect to Bike";
+
+    log("BLE device disconnected.");
+
+}
+
+
+// ----------------------------------------------------
+// LOG
+// ----------------------------------------------------
+
+function log(message) {
+
+    console.log(message);
+
+    logElement.innerHTML +=
+        "<br>" +
+        message;
+
+    logElement.scrollTop =
+        logElement.scrollHeight;
+
+}
+
+</script>
+
+</body>
+</html>
